@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class LoggerService extends Logger {}
+export class LoggerService {
+  log(message: string) {
+    console.log('[LOG]', message);
+  }
+}

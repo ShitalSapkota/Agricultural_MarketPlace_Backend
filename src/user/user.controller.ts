@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -18,40 +19,34 @@ export class UserController {
 
   // GET /user
   @Get()
-  getUsers(@Query('name') name: string) {
+  getUsers(@Query('name') name: string): unknown {
     return this.userService.findAllUsers(name);
-
-    // if (name) {
-    //   return users.filter((user) =>
-    //     user.name.toLowerCase().includes(name.toLowerCase()),
-    //   );
-    // }
   }
 
   // GET /user/:id
   @Get(':id')
-  getUserById(@Param('id') id: string) {
-    // Implementation for getting user by ID
-    return { id, name: 'John Doe' }; // Example response
+  getUserById(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.findOneUser(id);
   }
 
   // POST /user
   @Post()
   createUser(@Body() createUserDto: CreateUserDto) {
-    // Implementation for creating a new user
-    return { data: createUserDto, message: 'User created successfully' }; // Example response
+    return this.userService.createUser(createUserDto);
   }
 
   // PUT /user/:id
   @Put(':id')
-  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    // Implementation for updating a user
-    return { id, data: updateUserDto, message: 'User updated successfully' }; // Example response
+  updateUser(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.userService.updateUser(id, updateUserDto);
   }
 
   // DELETE /user/:id
   @Delete(':id')
-  deleteUser(@Param('id') id: string) {
-    // Implementation for deleting a user
+  deleteUser(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.deleteUser(id);
   }
 }
