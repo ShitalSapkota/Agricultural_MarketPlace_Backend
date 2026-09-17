@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { LoggerService } from './user.logger.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
@@ -15,8 +15,9 @@ export interface User {
 export class UserService {
   constructor(private readonly logger: LoggerService) {}
 
-  private readonly usersFilePath = fileURLToPath(
-    new URL('./data/users.json', import.meta.url),
+  private readonly usersFilePath = resolve(
+    process.cwd(),
+    'src/user/data/users.json',
   );
   private users: User[] = this.loadUsers();
 

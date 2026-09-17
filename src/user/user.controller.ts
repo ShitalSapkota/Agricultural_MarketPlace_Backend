@@ -8,10 +8,12 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserService } from './user.service.js';
+import { RoleGuard } from '../guards/role.guard.js';
 
 @Controller('user')
 export class UserController {
@@ -46,6 +48,7 @@ export class UserController {
 
   // DELETE /user/:id
   @Delete(':id')
+  @UseGuards(RoleGuard)
   deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.userService.deleteUser(id);
   }

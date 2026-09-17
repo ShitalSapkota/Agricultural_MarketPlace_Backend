@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { UserService } from './user.service.js';
 import { LoggerService } from './user.logger.js';
@@ -11,6 +11,7 @@ describe('UserService', () => {
   const usersFilePath = fileURLToPath(
     new URL('./data/users.json', import.meta.url),
   );
+  const originalUsers = readFileSync(usersFilePath, 'utf8');
   const defaultUsers = [
     { id: 1, name: 'John Doe', email: 'john.doe@example.com' },
     { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com' },
@@ -24,6 +25,10 @@ describe('UserService', () => {
     }).compile();
 
     service = module.get<UserService>(UserService);
+  });
+
+  afterAll(() => {
+    writeFileSync(usersFilePath, originalUsers);
   });
 
   it('should be defined', () => {
