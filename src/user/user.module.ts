@@ -6,5 +6,6 @@ import { LoggerService } from './user.logger.js';
 @Module({
   controllers: [UserController],
   providers: [UserService, LoggerService],
+  exports: [UserService],
 })
 export class UserModule {}

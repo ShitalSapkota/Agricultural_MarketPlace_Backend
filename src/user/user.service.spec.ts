@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { hash } from 'bcrypt';
+import { db } from '../prisma/db.js';
 import { UserService } from './user.service.js';
 import { LoggerService } from './user.logger.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
@@ -8,17 +8,27 @@ import { UpdateUserDto } from './dto/update-user.dto.js';
 
 describe('UserService', () => {
   let service: UserService;
-  const usersFilePath = fileURLToPath(
-    new URL('./data/users.json', import.meta.url),
-  );
-  const originalUsers = readFileSync(usersFilePath, 'utf8');
-  const defaultUsers = [
-    { id: 1, name: 'John Doe', email: 'john.doe@example.com' },
-    { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com' },
-  ];
+  let johnId: number;
+  let janeId: number;
+  const createdIds: number[] = [];
+  const testSuffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   beforeEach(async () => {
-    writeFileSync(usersFilePath, `${JSON.stringify(defaultUsers, null, 2)}\n`);
+    const passwordHash = await hash('test-password', 10);
+    const john = await db.orm.public.User.create({
+      name: 'John Doe',
+      email: `john.${testSuffix}@example.com`,
+      passwordHash,
+    });
+    const jane = await db.orm.public.User.create({
+      name: 'Jane Smith',
+      email: `jane.${testSuffix}@example.com`,
+      passwordHash,
+    });
+
+    johnId = john.id;
+    janeId = jane.id;
+    createdIds.push(johnId, janeId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [UserService, LoggerService],
@@ -27,47 +37,60 @@ describe('UserService', () => {
     service = module.get<UserService>(UserService);
   });
 
-  afterAll(() => {
-    writeFileSync(usersFilePath, originalUsers);
+  afterEach(async () => {
+    for (const id of createdIds.splice(0)) {
+      await db.orm.public.User.where({ id }).delete();
+    }
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  it('finds a user by ID', () => {
-    expect(service.findOneUser(1)).toEqual({
-      id: 1,
+  it('finds a user by ID', async () => {
+    await expect(service.findOneUser(johnId)).resolves.toMatchObject({
+      id: johnId,
       name: 'John Doe',
-      email: 'john.doe@example.com',
     });
   });
 
-  it('creates a user', () => {
+  it('creates a user', async () => {
     const create: CreateUserDto = {
       name: 'Alice Johnson',
-      email: 'alice.johnson@example.com',
+      email: `alice.${testSuffix}@example.com`,
+      passwordHash: await hash('test-password', 10),
     };
 
-    expect(service.createUser(create)).toEqual({
-      id: 3,
-      ...create,
+    const user = await service.createUser(create);
+    createdIds.push(user.id);
+
+    expect(user).toMatchObject({
+      name: create.name,
+      email: create.email,
+    });
+    expect(user).not.toHaveProperty('passwordHash');
+  });
+
+  it('updates a user', async () => {
+    const update: UpdateUserDto = { name: 'Johnny Doe' };
+
+    await expect(service.updateUser(johnId, update)).resolves.toMatchObject({
+      id: johnId,
+      name: 'Johnny Doe',
     });
   });
 
-  it('updates a user', () => {
-    const update: UpdateUserDto = { name: 'Johnny Doe' };
+  it('deletes a user', async () => {
+    await service.deleteUser(janeId);
 
-    expect(service.updateUser(1, update).name).toBe('Johnny Doe');
+    await expect(service.findOneUser(janeId)).rejects.toThrow(
+      `User with ID ${janeId} not found`,
+    );
   });
 
-  it('deletes a user', () => {
-    service.deleteUser(2);
-
-    expect(() => service.findOneUser(2)).toThrow('User with ID 2 not found');
-  });
-
-  it('throws when a user does not exist', () => {
-    expect(() => service.findOneUser(99)).toThrow('User with ID 99 not found');
+  it('throws when a user does not exist', async () => {
+    await expect(service.findOneUser(-1)).rejects.toThrow(
+      'User with ID -1 not found',
+    );
   });
 });
