@@ -5,12 +5,10 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UserService } from './user.service.js';
 import { RoleGuard } from '../guards/role.guard.js';
@@ -32,10 +30,10 @@ export class UserController {
   }
 
   // POST /user
-  @Post()
-  createUser(@Body() createUserDto: CreateUserDto) {
-    return this.userService.createUser(createUserDto);
-  }
+  // @Post()
+  // createUser(@Body() createUserDto: CreateUserDto) {
+  //   return this.userService.createUser(createUserDto);
+  // }
 
   // PUT /user/:id
   @Put(':id')

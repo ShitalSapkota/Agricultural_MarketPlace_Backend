@@ -54,3 +54,23 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+node_modules/
+dist/
+
+.agents/
+
+# TypeScript/Nest generated files
+*.tsbuildinfo
+
+# Prisma local/project metadata
+.prisma/
+.prisma/
+
+# Local uploads and runtime data
+uploads/
+storage/
+*.sqlite
+*.sqlite-journal
+
+# Legacy JSON user data containing password hashes
+src/user/data/users.json

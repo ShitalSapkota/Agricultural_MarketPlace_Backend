@@ -2,16 +2,13 @@
   {
     "id": 2,
     "name": "Jane Smith",
-    "email": "jane.smith@example.com"
+    "email": "jane.smith@example.com",
+    "password": "$2b$10$V/d/jwT2idUzIH8K49I5oeR2o3RcJhL0D2DbG49dKp/7MGur1Rdy2"
   },
   {
     "id": 55,
     "name": "Shital",
-    "email": "shital.sapkota@example.com"
-  },
-  {
-    "id": 55,
-    "name": "Shital",
-    "email": "shital.sapkota@example.com"
+    "email": "shital.sapkota@example.com",
+    "password": "$2b$10$V/d/jwT2idUzIH8K49I5oeR2o3RcJhL0D2DbG49dKp/7MGur1Rdy2"
   }
 ]

@@ -1,89 +1,93 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { db } from '../prisma/db.js';
 import { LoggerService } from './user.logger.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+type DatabaseUser = NonNullable<
+  Awaited<ReturnType<typeof db.orm.public.User.first>>
+>;
+
+type CreateUserData = CreateUserDto & {
+  passwordHash: string;
+};
+export type User = DatabaseUser;
+export type SafeUser = Omit<DatabaseUser, 'passwordHash'>;
 
 @Injectable()
 export class UserService {
   constructor(private readonly logger: LoggerService) {}
 
-  private readonly usersFilePath = resolve(
-    process.cwd(),
-    'src/user/data/users.json',
-  );
-  private users: User[] = this.loadUsers();
-
-  private loadUsers(): User[] {
-    return JSON.parse(readFileSync(this.usersFilePath, 'utf8')) as User[];
+  private toSafeUser(user: DatabaseUser): SafeUser {
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
   }
 
-  private saveUsers(): void {
-    writeFileSync(
-      this.usersFilePath,
-      `${JSON.stringify(this.users, null, 2)}\n`,
-    );
+  async findOneByEmail(email: string): Promise<User | undefined> {
+    const user = await db.orm.public.User.where((record) =>
+      record.email.eq(email),
+    ).first();
+
+    return user ?? undefined;
   }
 
-  private findUserIndex(id: number): number {
-    const index = this.users.findIndex((user) => user.id === id);
+  async createUser(createUserDto: CreateUserData): Promise<SafeUser> {
+    const user = await db.orm.public.User.create(createUserDto);
 
-    if (index === -1) {
+    this.logger.log(`Created user ${user.id}`);
+
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  }
+
+  async findAllUsers(name?: string): Promise<SafeUser[]> {
+    this.logger.log('Fetching all users');
+
+    const users = name
+      ? await db.orm.public.User.where((user) =>
+          user.name.ilike(`%${name}%`),
+        ).all()
+      : await db.orm.public.User.all();
+
+    return users.map((user) => this.toSafeUser(user));
+  }
+
+  async findOneUser(id: number): Promise<SafeUser> {
+    const user = await db.orm.public.User.first({ id });
+
+    if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return index;
+    return this.toSafeUser(user);
   }
 
-  findAllUsers(name?: string): User[] {
-    this.logger.log('Fetching all users');
-    if (name) {
-      return this.users.filter((user) =>
-        user.name.toLowerCase().includes(name.toLowerCase()),
-      );
+  async updateUser(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<SafeUser> {
+    await this.findOneUser(id);
+
+    const user = await db.orm.public.User.where({ id }).update(updateUserDto);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
-    return this.users;
-  }
 
-  createUser(createUserDto: CreateUserDto): User {
-    const newUser: User = {
-      id: this.users.length
-        ? Math.max(...this.users.map((user) => user.id)) + 1
-        : 1,
-      ...createUserDto,
-    };
-
-    this.users.push(newUser);
-    this.saveUsers();
-    this.logger.log(`Created user ${newUser.id}`);
-    return newUser;
-  }
-
-  findOneUser(id: number): User {
-    return this.users[this.findUserIndex(id)];
-  }
-
-  updateUser(id: number, updateUserDto: UpdateUserDto): User {
-    const user = this.findOneUser(id);
-    Object.assign(user, updateUserDto);
-    this.saveUsers();
     this.logger.log(`Updated user ${id}`);
-    return user;
+    return this.toSafeUser(user);
   }
 
-  deleteUser(id: number): User {
-    const index = this.findUserIndex(id);
-    const [deletedUser] = this.users.splice(index, 1);
+  async deleteUser(id: number): Promise<SafeUser> {
+    const user = await db.orm.public.User.first({ id });
 
-    this.saveUsers();
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    await db.orm.public.User.where({ id }).delete();
+
     this.logger.log(`Deleted user ${id}`);
-    return deletedUser;
+    return this.toSafeUser(user);
   }
 }
