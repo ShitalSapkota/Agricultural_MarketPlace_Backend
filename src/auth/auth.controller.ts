@@ -4,12 +4,15 @@ import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { Roles } from './decorators/roles.decorator.js';
+import { RoleGuard } from '../guards/role.guard.js';
 
 interface AuthenticatedRequest extends Request {
   user: {
     userId: number;
     username: string;
     email: string;
+    role: 'CUSTOMER' | 'FARMER' | 'ADMIN';
   };
 }
 
@@ -28,7 +31,8 @@ export class AuthController {
   }
 
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('CUSTOMER', 'FARMER', 'ADMIN')
   getProfile(@Req() request: AuthenticatedRequest) {
     return request.user;
   }
