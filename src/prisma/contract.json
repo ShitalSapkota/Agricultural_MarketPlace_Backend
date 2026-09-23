@@ -12,6 +12,25 @@
   "domain": {
     "namespaces": {
       "public": {
+        "enum": {
+          "UserRole": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "CUSTOMER",
+                "value": "CUSTOMER"
+              },
+              {
+                "name": "FARMER",
+                "value": "FARMER"
+              },
+              {
+                "name": "ADMIN",
+                "value": "ADMIN"
+              }
+            ]
+          }
+        },
         "models": {
           "User": {
             "fields": {
@@ -50,6 +69,19 @@
                   "kind": "scalar"
                 }
               },
+              "role": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "UserRole",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -76,6 +108,9 @@
                 "passwordHash": {
                   "column": "passwordHash"
                 },
+                "role": {
+                  "column": "role"
+                },
                 "updatedAt": {
                   "column": "updatedAt"
                 }
@@ -94,6 +129,13 @@
         "entries": {
           "table": {
             "user": {
+              "checks": [
+                {
+                  "expression": "\"role\" IN ('CUSTOMER', 'FARMER', 'ADMIN')",
+                  "name": "user_role_check_f3da6a20",
+                  "prefix": "user_role_check"
+                }
+              ],
               "columns": {
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -128,6 +170,21 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "role": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "CUSTOMER"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "UserRole",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
@@ -149,13 +206,23 @@
                 }
               ]
             }
+          },
+          "valueSet": {
+            "UserRole": {
+              "kind": "valueSet",
+              "values": [
+                "CUSTOMER",
+                "FARMER",
+                "ADMIN"
+              ]
+            }
           }
         },
         "id": "public",
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "581c61d1e2d5ef349eef6589b8412b07b1e8c353c36768229c88880817e06ffd"
+    "storageHash": "2690af1a2289836b90b0259cf4c79550a9ab7a57cf4277df0da2d2ebdccff635"
   },
   "execution": {
     "executionHash": "a499031370d1fd1891ca11072d3f7e11be752b686057f7c6d0900ee0159f4ed0",
